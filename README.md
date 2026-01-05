@@ -121,11 +121,7 @@ http://localhost:3000
 
 ---
 
-## 9. Arrêt du réseau
+## 9. Demontration video
 
-L’arrêt du réseau est effectué via les fichiers `docker-compose` fournis
-dans `test-network` :
-
-```bash
-docker compose down -v
-```
+Demo video: available in the Releases section → Final Demo Video
+link : 
