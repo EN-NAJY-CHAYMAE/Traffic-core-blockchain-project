@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traffic Core - SmartBFT Blockchain Simulation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            padding: 15px;
+        }
+
+        header {
+            background: white;
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            color: #2563eb;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        .live-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            background: #10b981;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Simulation Controls */
+        .sim-controls {
+            background: white;
+            border-radius: 6px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .sim-controls button {
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-start { background: #10b981; color: white; }
+        .btn-start:hover { background: #059669; }
+        .btn-pause { background: #f59e0b; color: white; }
+        .btn-pause:hover { background: #d97706; }
+        .btn-reset { background: #ef4444; color: white; }
+        .btn-reset:hover { background: #dc2626; }
+        .btn-primary { background: #2563eb; color: white; } 
+        .btn-primary:hover { background: #1d4ed8; } 
+
+        .speed-selector, .spawn-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .speed-selector select, .spawn-selector select {
+            padding: 6px 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        .sim-status {
+            margin-left: auto;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 10px;
+        }
+
+        .status-running { background: #d1fae5; color: #065f46; }
+        .status-paused { background: #fef3c7; color: #92400e; }
+        .status-stopped { background: #fee2e2; color: #991b1b; }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 3px solid #2563eb;
+        }
+
+        .stat-card.red { border-left-color: #dc2626; }
+        .stat-card.orange { border-left-color: #f59e0b; }
+        .stat-card.green { border-left-color: #10b981; }
+
+        .stat-label {
+            color: #6b7280;
+            font-size: 10px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .stat-value {
+            color: #1f2937;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .stat-subtext {
+            color: #9ca3af;
+            font-size: 10px;
+            margin-top: 3px;
+        }
+
+        /* Main Layout */
+        .main-layout {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        /* Network Map */
+        .network-map-container {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .map-header {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        #networkMap {
+            width: 100%;
+            height: 500px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            background: #fafafa;
+        }
+
+        .intersection {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .intersection:hover {
+            filter: brightness(1.2);
+        }
+
+        .road {
+            stroke-width: 3;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .road:hover {
+            stroke-width: 5;
+        }
+
+        .vehicle-dot {
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .vehicle-dot:hover {
+            r: 6;
+        }
+
+        /* Transaction Feed */
+        .transaction-feed {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .feed-header {
+            font-weight: 600;
+            color: #1f2937;
+            margin-bottom: 10px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .tx-count {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .tx-item {
+            background: #f9fafb;
+            border-left: 3px solid #10b981;
+            padding: 8px 10px;
+            margin-bottom: 8px;
+            border-radius: 3px;
+            font-size: 11px;
+        }
+
+        .tx-item.failed {
+            border-left-color: #ef4444;
+        }
+
+        .tx-function {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 11px;
+        }
+
+        .tx-id {
+            color: #6b7280;
+            font-family: monospace;
+            font-size: 9px;
+            margin-top: 2px;
+        }
+
+        .tx-time {
+            color: #9ca3af;
+            font-size: 9px;
+        }
+
+        /* Tabs */
+        .tabs {
+            background: white;
+            border-radius: 6px;
+            padding: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 5px;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 15px;
+        }
+
+        .tab-button {
+            background: none;
+            border: none;
+            padding: 8px 16px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6b7280;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            transition: all 0.2s;
+        }
+
+        .tab-button:hover {
+            color: #2563eb;
+        }
+
+        .tab-button.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .panel {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: white;
+            padding: 10px 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-body {
+            padding: 12px;
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+
+        .item:hover {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border-color: #2563eb;
+        }
+
+        .item-title {
+            font-weight: 600;
+            color: #111827;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .item-details {
+            color: #6b7280;
+            font-size: 10px;
+            line-height: 1.5;
+        }
+
+        .badge {
+            font-size: 9px;
+            padding: 3px 7px;
+            border-radius: 3px;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+        }
+
+        .badge-active { background: #d1fae5; color: #065f46; }
+        .badge-open { background: #d1fae5; color: #065f46; }
+        .badge-closed { background: #fee2e2; color: #991b1b; }
+        .badge-low { background: #dbeafe; color: #1e40af; }
+        .badge-medium { background: #fef3c7; color: #92400e; }
+        .badge-high { background: #fee2e2; color: #991b1b; }
+        .badge-green { background: #d1fae5; color: #065f46; }
+        .badge-yellow { background: #fef3c7; color: #92400e; }
+        .badge-red { background: #fee2e2; color: #991b1b; }
+        .badge-emergency { background: #ef4444; color: white; }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        /* button:hover {
+            background: #1d4ed8;
+        } */
+
+        .btn-small {
+            padding: 4px 10px;
+            font-size: 10px;
+        }
+
+        .btn-success {
+            background: #10b981;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 7px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 50px;
+        }
+
+        .form-label {
+            display: block;
+            color: #374151;
+            font-size: 10px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #9ca3af;
+            padding: 30px;
+            font-size: 11px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #2563eb;
+            border-radius: 3px;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+
+        .block-info {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+
+        .block-info-label {
+            color: #6b7280;
+            font-size: 9px;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+
+        .block-info-value {
+            color: #1f2937;
+            font-family: monospace;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div>
+                <h1>🚦 Traffic Core Dashboard</h1>
+                <div class="subtitle">
+                    <span class="live-dot"></span>
+                    Blockchain SmartBFT Byzantine Fault Tolerant • Hyperledger Fabric v3.1.3
+                </div>
+            </div>
+            <div class="sim-status">
+                <span>Mis à jour: <span id="lastUpdate">-</span></span>
+            </div>
+        </header>
+
+        <!-- Simulation Controls -->
+        <div class="sim-controls">
+            <button class="btn-start" onclick="startSimulation()">▶ Start</button>
+            <button class="btn-pause" onclick="pauseSimulation()">⏸ Pause</button>
+            <button class="btn-primary" onclick="resumeSimulation()">▶ Resume</button>
+            <button class="btn-reset" onclick="resetSimulation()">↻ Reset</button>
+            
+            <div class="speed-selector">
+                <label style="font-size: 11px; font-weight: 600; color: #374151;">Speed:</label>
+                <select id="speedSelect" onchange="changeSpeed()">
+                    <option value="1">1x</option>
+                    <option value="2">2x</option>
+                    <option value="5">5x</option>
+                    <option value="10">10x</option>
+                </select>
+            </div>
+
+            <div class="spawn-selector">
+                <label style="font-size: 11px; font-weight: 600; color: #374151;">Spawn:</label>
+                <select id="spawnSelect" onchange="changeSpawnRate()">
+                    <option value="0">Off</option>
+                    <option value="1">1/min</option>
+                    <option value="2" selected>2/min</option>
+                    <option value="5">5/min</option>
+                    <option value="10">10/min</option>
+                </select>
+            </div>
+
+            <div class="sim-status">
+                <span>Status: <span class="status-badge status-stopped" id="simStatus">STOPPED</span></span>
+                <span>TX: <span id="txCount">0</span></span>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Véhicules</div>
+                <div class="stat-value" id="totalVehicles">-</div>
+                <div class="stat-subtext"><span id="activeVehicles">-</span> actifs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Routes</div>
+                <div class="stat-value" id="totalRoads">-</div>
+                <div class="stat-subtext"><span id="openRoads">-</span> ouvertes</div>
+            </div>
+            <div class="stat-card red">
+                <div class="stat-label">Incidents</div>
+                <div class="stat-value" id="totalIncidents">-</div>
+                <div class="stat-subtext"><span id="activeIncidents">-</span> actifs</div>
+            </div>
+            <div class="stat-card orange">
+                <div class="stat-label">Violations</div>
+                <div class="stat-value" id="totalViolations">-</div>
+                <div class="stat-subtext">+<span id="avgExcessSpeed">-</span> km/h</div>
+            </div>
+            <div class="stat-card green">
+                <div class="stat-label">Urgences</div>
+                <div class="stat-value" id="emergencyVehicles">-</div>
+                <div class="stat-subtext">Véhicules prioritaires</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Intersections</div>
+                <div class="stat-value" id="totalIntersections">-</div>
+                <div class="stat-subtext"><span id="greenLights">-</span> feux verts</div>
+            </div>
+        </div>
+
+        <!-- Main Layout: Network Map + Transaction Feed -->
+        <div class="main-layout">
+            <!-- Network Map -->
+            <div class="network-map-container">
+                <div class="map-header">Network Map Visualization</div>
+                <svg id="networkMap" viewBox="0 0 800 500"></svg>
+            </div>
+
+            <!-- Transaction Feed -->
+            <div class="transaction-feed">
+                <div class="feed-header">
+                     Live Transactions
+                    <span class="tx-count" id="liveTxCount">0 TX</span>
+                </div>
+                <div id="transactionList"></div>
+            </div>
+        </div>
+
+        <!-- Tabs for Details -->
+        <div class="tabs">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="switchTab('overview')">Vue d'ensemble</button>
+                <button class="tab-button" onclick="switchTab('incidents')">Incidents</button>
+                <button class="tab-button" onclick="switchTab('violations')">Violations</button>
+                <button class="tab-button" onclick="switchTab('history')">Historique</button>
+                <button class="tab-button" onclick="switchTab('blockchain')">Blockchain</button>
+            </div>
+
+            <!-- Overview Tab -->
+            <div id="overview" class="tab-content active">
+                <div class="grid-3">
+                    <div class="panel">
+                        <div class="panel-header">
+                            Routes
+                            <button class="btn-small" onclick="loadRoads()">↻</button>
+                        </div>
+                        <div class="panel-body" id="roadsList"></div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            Véhicules
+                            <button class="btn-small" onclick="loadVehicles()">↻</button>
+                        </div>
+                        <div class="panel-body" id="vehiclesList"></div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">Intersections</div>
+                        <div class="panel-body" id="intersectionsList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Incidents Tab -->
+            <div id="incidents" class="tab-content">
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel-header">
+                            Incidents Actifs
+                            <button class="btn-small" onclick="loadIncidents()">↻</button>
+                        </div>
+                        <div class="panel-body" id="incidentsList"></div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">Signaler un Incident</div>
+                        <div class="panel-body">
+                            <form onsubmit="reportIncident(event)">
+                                <label class="form-label">ID Incident</label>
+                                <input type="text" id="incidentId" placeholder="INC001" required>
+                                
+                                <label class="form-label">Type</label>
+                                <select id="incidentType" required>
+                                    <option value="">Choisir</option>
+                                    <option value="accident">Accident</option>
+                                    <option value="roadwork">Travaux</option>
+                                    <option value="closure">Fermeture</option>
+                                    <option value="weather">Météo</option>
+                                </select>
+                                
+                                <label class="form-label">Localisation</label>
+                                <input type="text" id="incidentLocation" placeholder="Central Plaza" required>
+                                
+                                <label class="form-label">Route</label>
+                                <select id="incidentRoadId" required>
+                                    <option value="">Choisir une route</option>
+                                </select>
+                                
+                                <label class="form-label">Gravité</label>
+                                <select id="incidentSeverity" required>
+                                    <option value="">Choisir</option>
+                                    <option value="low">Faible</option>
+                                    <option value="medium">Moyenne</option>
+                                    <option value="high">Élevée</option>
+                                    <option value="critical">Critique</option>
+                                </select>
+                                
+                                <label class="form-label">Description</label>
+                                <textarea id="incidentDescription" placeholder="Décrivez l'incident..." required></textarea>
+                                
+                                <button type="submit" style="width: 100%;">Signaler</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Violations Tab -->
+            <div id="violations" class="tab-content">
+                <div class="panel">
+                    <div class="panel-header">
+                        Violations de Vitesse
+                        <button class="btn-small" onclick="loadViolations()">↻</button>
+                    </div>
+                    <div class="panel-body" id="violationsList"></div>
+                </div>
+            </div>
+
+            <!-- History Tab -->
+            <div id="history" class="tab-content">
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel-header">Sélectionner un Véhicule</div>
+                        <div class="panel-body">
+                            <label class="form-label">Véhicule ID</label>
+                            <select id="historyVehicleId" onchange="loadVehicleHistory()">
+                                <option value="">Choisir un véhicule</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            Historique Complet
+                            <span class="badge badge-low" id="historyCount">0 entrées</span>
+                        </div>
+                        <div class="panel-body" id="vehicleHistoryList"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Blockchain Tab -->
+            <div id="blockchain" class="tab-content">
+                <div class="grid-2">
+                    <div class="panel">
+                        <div class="panel-header">Block Explorer</div>
+                        <div class="panel-body">
+                            <div class="block-info">
+                                <div class="block-info-label">Latest Block</div>
+                                <div class="block-info-value" id="blockNumber">Loading...</div>
+                            </div>
+                            <div class="block-info">
+                                <div class="block-info-label">Transactions in Block</div>
+                                <div class="block-info-value" id="blockTxCount">-</div>
+                            </div>
+                            <div class="block-info">
+                                <div class="block-info-label">Total Transactions</div>
+                                <div class="block-info-value" id="totalTx">-</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">World State Query</div>
+                        <div class="panel-body">
+                            <label class="form-label">Asset ID</label>
+                            <input type="text" id="queryAssetId" placeholder="V001, R001, I001, etc.">
+                            <button onclick="queryAsset()" style="width: 100%;">Query</button>
+                            <div id="queryResult" style="margin-top: 10px; font-size: 10px; font-family: monospace; background: #f9fafb; padding: 8px; border-radius: 3px; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+        let transactions = [];
+        let networkData = { roads: [], intersections: [], vehicles: [] };
+
+        // ==================== SIMULATION CONTROLS ====================
+
+        async function startSimulation() {
+            try {
+                const res = await fetch(`${API_URL}/simulation/start`, { method: 'POST' });
+                const data = await res.json();
+                updateSimStatus(data.stats);
+                alert('✅ ' + data.message);
+            } catch (error) {
+                alert('❌ ' + error.message);
+            }
+        }
+
+        async function pauseSimulation() {
+            try {
+                const res = await fetch(`${API_URL}/simulation/pause`, { method: 'POST' });
+                const data = await res.json();
+                updateSimStatus(data.stats);
+                alert('⏸ ' + data.message);
+            } catch (error) {
+                alert('❌ ' + error.message);
+            }
+        }
+
+        async function resumeSimulation() {
+            try {
+                const res = await fetch(`${API_URL}/simulation/resume`, { method: 'POST' });
+                const data = await res.json();
+                updateSimStatus(data.stats);
+                alert('▶ ' + data.message);
+            } catch (error) {
+                alert('❌ ' + error.message);
+            }
+        }
+
+        async function resetSimulation() {
+            if (!confirm('Reset simulation? This will reload initial state.')) return;
+            try {
+                const res = await fetch(`${API_URL}/simulation/reset`, { method: 'POST' });
+                const data = await res.json();
+                updateSimStatus(data.stats);
+                loadAll();
+                alert('🔄 ' + data.message);
+            } catch (error) {
+                alert('❌ ' + error.message);
+            }
+        }
+
+        async function changeSpeed() {
+            const multiplier = document.getElementById('speedSelect').value;
+            try {
+                const res = await fetch(`${API_URL}/simulation/speed`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ multiplier: parseFloat(multiplier) })
+                });
+                const data = await res.json();
+                updateSimStatus(data.stats);
+            } catch (error) {
+                console.error('Error changing speed:', error);
+            }
+        }
+
+        async function changeSpawnRate() {
+            const rate = document.getElementById('spawnSelect').value;
+            try {
+                const res = await fetch(`${API_URL}/simulation/spawn-rate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rate: parseInt(rate) })
+                });
+                const data = await res.json();
+            } catch (error) {
+                console.error('Error changing spawn rate:', error);
+            }
+        }
+
+        function updateSimStatus(stats) {
+            const statusBadge = document.getElementById('simStatus');
+            const txCount = document.getElementById('txCount');
+            
+            if (stats.isRunning) {
+                statusBadge.textContent = 'RUNNING';
+                statusBadge.className = 'status-badge status-running';
+            } else {
+                statusBadge.textContent = 'PAUSED';
+                statusBadge.className = 'status-badge status-paused';
+            }
+            
+            txCount.textContent = stats.transactionCount || 0;
+        }
+
+        // ==================== NETWORK MAP VISUALIZATION ====================
+
+        function drawNetworkMap() {
+            const svg = document.getElementById('networkMap');
+            const width = 800;
+            const height = 500;
+            const padding = 50;
+
+            // Clear existing
+            svg.innerHTML = '';
+
+            // Calculate positions for intersections
+            const intersectionPositions = {};
+            networkData.intersections.forEach((int, i) => {
+                const angle = (i / networkData.intersections.length) * 2 * Math.PI;
+                const radius = Math.min(width, height) / 2 - padding;
+                intersectionPositions[int.id] = {
+                    x: width / 2 + radius * Math.cos(angle),
+                    y: height / 2 + radius * Math.sin(angle)
+                };
+            });
+
+            // Draw roads (edges)
+            networkData.roads.forEach(road => {
+                const start = intersectionPositions[road.startIntersection];
+                const end = intersectionPositions[road.endIntersection];
+                
+                if (!start || !end) return;
+
+                const color = road.congestionLevel === 'low' ? '#10b981' : 
+                             road.congestionLevel === 'medium' ? '#f59e0b' : '#ef4444';
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', start.x);
+                line.setAttribute('y1', start.y);
+                line.setAttribute('x2', end.x);
+                line.setAttribute('y2', end.y);
+                line.setAttribute('stroke', color);
+                line.setAttribute('class', 'road');
+                line.setAttribute('data-road', road.id);
+                line.onclick = () => showRoadInfo(road);
+                svg.appendChild(line);
+            });
+
+            // Draw intersections (nodes)
+            networkData.intersections.forEach(int => {
+                const pos = intersectionPositions[int.id];
+                
+                const lightColor = int.trafficLightState === 'green' ? '#10b981' :
+                                  int.trafficLightState === 'yellow' ? '#f59e0b' : '#ef4444';
+
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', pos.x);
+                circle.setAttribute('cy', pos.y);
+                circle.setAttribute('r', 12);
+                circle.setAttribute('fill', lightColor);
+                circle.setAttribute('stroke', 'white');
+                circle.setAttribute('stroke-width', 2);
+                circle.setAttribute('class', 'intersection');
+                circle.setAttribute('data-intersection', int.id);
+                circle.onclick = () => showIntersectionInfo(int);
+                svg.appendChild(circle);
+
+                // Label
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', pos.x);
+                text.setAttribute('y', pos.y - 18);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('font-size', '10');
+                text.setAttribute('fill', '#374151');
+                text.textContent = int.id;
+                svg.appendChild(text);
+            });
+
+            // Draw vehicles
+            networkData.vehicles.forEach(vehicle => {
+                const intersection = intersectionPositions[vehicle.currentIntersection];
+                if (!intersection) return;
+
+                // Random offset around intersection
+                const offset = 15;
+                const angle = Math.random() * 2 * Math.PI;
+                const x = intersection.x + offset * Math.cos(angle);
+                const y = intersection.y + offset * Math.sin(angle);
+
+                const color = vehicle.isEmergency ? '#ef4444' : '#2563eb';
+
+                const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                dot.setAttribute('cx', x);
+                dot.setAttribute('cy', y);
+                dot.setAttribute('r', 4);
+                dot.setAttribute('fill', color);
+                dot.setAttribute('class', 'vehicle-dot');
+                dot.setAttribute('data-vehicle', vehicle.id);
+                dot.onclick = () => showVehicleInfo(vehicle);
+                svg.appendChild(dot);
+            });
+        }
+
+        function showRoadInfo(road) {
+            alert(`Route: ${road.name || road.id}\nStatus: ${road.status}\nCongestion: ${road.congestionLevel}\nVitesse max: ${road.maxSpeed} km/h\nLongueur: ${road.length}m`);
+        }
+
+        function showIntersectionInfo(int) {
+            alert(`Intersection: ${int.name || int.id}\nFeu: ${int.trafficLightState}\nDensité: ${int.trafficDensity}\nRoutes: ${int.connectedRoads.join(', ')}`);
+        }
+
+        function showVehicleInfo(vehicle) {
+            alert(`Véhicule: ${vehicle.id}\nType: ${vehicle.type}\nRoute: ${vehicle.currentRoad}\nVitesse: ${vehicle.speed} km/h\nDirection: ${vehicle.direction}`);
+        }
+
+        // ==================== TRANSACTION FEED ====================
+
+        function addTransaction(tx) {
+            transactions.unshift(tx);
+            if (transactions.length > 50) transactions = transactions.slice(0, 50);
+            
+            const list = document.getElementById('transactionList');
+            const item = document.createElement('div');
+            item.className = `tx-item ${tx.status === 'failed' ? 'failed' : ''}`;
+            item.innerHTML = `
+                <div class="tx-function">${tx.function}</div>
+                <div class="tx-id">TX: ${tx.txId.substring(0, 16)}...</div>
+                <div class="tx-time">${new Date(tx.timestamp).toLocaleTimeString()}</div>
+            `;
+            
+            list.insertBefore(item, list.firstChild);
+            
+            // Keep only latest 20 in DOM
+            while (list.children.length > 20) {
+                list.removeChild(list.lastChild);
+            }
+            
+            document.getElementById('liveTxCount').textContent = `${transactions.length} TX`;
+        }
+
+        // Simulate transaction feed (in real app, would come from blockchain events)
+        function simulateTransactionFeed() {
+            const functions = ['UpdateVehiclePosition', 'UpdateTrafficLight', 'UpdateRoadCongestion', 'CreateVehicle'];
+            const randomFunc = functions[Math.floor(Math.random() * functions.length)];
+            
+            addTransaction({
+                txId: 'tx_' + Math.random().toString(36).substring(7),
+                function: randomFunc,
+                status: 'success',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        // ==================== DATA LOADING ====================
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_URL}/stats`);
+                const stats = await res.json();
+                
+                document.getElementById('totalVehicles').textContent = stats.vehicles.total;
+                document.getElementById('activeVehicles').textContent = stats.vehicles.active;
+                document.getElementById('totalRoads').textContent = stats.roads.total;
+                document.getElementById('openRoads').textContent = stats.roads.open;
+                document.getElementById('totalIncidents').textContent = stats.incidents.total;
+                document.getElementById('activeIncidents').textContent = stats.incidents.active;
+                document.getElementById('totalViolations').textContent = stats.violations.total;
+                document.getElementById('avgExcessSpeed').textContent = stats.violations.averageExcessSpeed;
+                document.getElementById('emergencyVehicles').textContent = stats.vehicles.emergency;
+                document.getElementById('totalIntersections').textContent = stats.intersections.total;
+                document.getElementById('greenLights').textContent = stats.intersections.trafficLights.green;
+                
+                document.getElementById('lastUpdate').textContent = new Date().toLocaleTimeString();
+                
+                // Update blockchain info
+                document.getElementById('totalTx').textContent = transactions.length;
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadRoads() {
+            try {
+                const res = await fetch(`${API_URL}/roads`);
+                networkData.roads = await res.json();
+                
+                const list = document.getElementById('roadsList');
+                list.innerHTML = networkData.roads.map(road => `
+                    <div class="item">
+                        <div class="item-title">${road.name || road.id}</div>
+                        <div class="item-details">
+                            Status: <span class="badge badge-${road.status}">${road.status}</span><br>
+                            Congestion: <span class="badge badge-${road.congestionLevel}">${road.congestionLevel}</span><br>
+                            ${road.lanes} voies • ${road.maxSpeed} km/h • ${road.length}m
+                        </div>
+                    </div>
+                `).join('') || '<div class="empty-state">Aucune route</div>';
+
+                // Populate selects
+                const options = networkData.roads.map(r => `<option value="${r.id}">${r.name || r.id}</option>`).join('');
+                document.getElementById('incidentRoadId').innerHTML = '<option value="">Choisir</option>' + options;
+                
+                drawNetworkMap();
+            } catch (error) {
+                console.error('Error loading roads:', error);
+            }
+        }
+
+        async function loadVehicles() {
+            try {
+                const res = await fetch(`${API_URL}/vehicles`);
+                networkData.vehicles = await res.json();
+                
+                const list = document.getElementById('vehiclesList');
+                list.innerHTML = networkData.vehicles.map(v => `
+                    <div class="item">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span class="item-title">${v.id}</span>
+                            <span class="badge ${v.isEmergency ? 'badge-emergency' : 'badge-active'}">${v.type}</span>
+                        </div>
+                        <div class="item-details">
+                            ${v.currentRoad} • ${v.currentIntersection}<br>
+                            ${v.speed} km/h • ${v.direction}
+                        </div>
+                    </div>
+                `).join('') || '<div class="empty-state">Aucun véhicule</div>';
+
+                // Populate history select
+                const vehicleOptions = networkData.vehicles.map(v => `<option value="${v.id}">${v.id}</option>`).join('');
+                document.getElementById('historyVehicleId').innerHTML = '<option value="">Choisir</option>' + vehicleOptions;
+                
+                drawNetworkMap();
+            } catch (error) {
+                console.error('Error loading vehicles:', error);
+            }
+        }
+
+        async function loadIntersections() {
+            try {
+                const res = await fetch(`${API_URL}/intersections`);
+                networkData.intersections = await res.json();
+                
+                const list = document.getElementById('intersectionsList');
+                list.innerHTML = networkData.intersections.map(i => `
+                    <div class="item">
+                        <div class="item-title">${i.name || i.id}</div>
+                        <div class="item-details">
+                            Feu: <span class="badge badge-${i.trafficLightState}">${i.trafficLightState}</span><br>
+                            Densité: ${i.trafficDensity}<br>
+                            ${i.connectedRoads.length} routes
+                        </div>
+                    </div>
+                `).join('') || '<div class="empty-state">Aucune intersection</div>';
+                
+                drawNetworkMap();
+            } catch (error) {
+                console.error('Error loading intersections:', error);
+            }
+        }
+
+        async function loadIncidents() {
+            try {
+                const res = await fetch(`${API_URL}/incidents/active`);
+                const incidents = await res.json();
+                
+                const list = document.getElementById('incidentsList');
+                list.innerHTML = incidents.map(inc => `
+                    <div class="item">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span class="item-title">${inc.id}</span>
+                            <span class="badge badge-${inc.severity}">${inc.severity}</span>
+                        </div>
+                        <div class="item-details">
+                            ${inc.type} • ${inc.location}<br>
+                            ${inc.description}<br>
+                            <small>${new Date(inc.reportedAt).toLocaleString()}</small>
+                        </div>
+                        <button class="btn-small btn-success" onclick="resolveIncident('${inc.id}')" style="margin-top: 5px;">Résoudre</button>
+                    </div>
+                `).join('') || '<div class="empty-state">✅ Aucun incident actif</div>';
+            } catch (error) {
+                console.error('Error loading incidents:', error);
+            }
+        }
+
+        async function loadViolations() {
+            try {
+                const res = await fetch(`${API_URL}/violations`);
+                const violations = await res.json();
+                
+                const list = document.getElementById('violationsList');
+                list.innerHTML = violations.map(v => `
+                    <div class="item">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span class="item-title">${v.vehicleId}</span>
+                            <span class="badge badge-medium">+${v.excessSpeed} km/h</span>
+                        </div>
+                        <div class="item-details">
+                            ${v.location} (${v.roadId})<br>
+                            Limite: ${v.speedLimit} • Réel: ${v.actualSpeed}<br>
+                            <small>${new Date(v.timestamp).toLocaleString()}</small>
+                        </div>
+                    </div>
+                `).join('') || '<div class="empty-state">✅ Aucune violation</div>';
+            } catch (error) {
+                console.error('Error loading violations:', error);
+            }
+        }
+
+        async function loadVehicleHistory() {
+            const vehicleId = document.getElementById('historyVehicleId').value;
+            if (!vehicleId) {
+                document.getElementById('vehicleHistoryList').innerHTML = '<div class="empty-state">Sélectionnez un véhicule</div>';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/vehicles/${vehicleId}/history`);
+                const data = await res.json();
+                
+                document.getElementById('historyCount').textContent = `${data.totalRecords} entrées`;
+                
+                const list = document.getElementById('vehicleHistoryList');
+                list.innerHTML = data.history.map(h => `
+                    <div class="item">
+                        <div class="item-title">TX: ${h.txId.substring(0, 16)}...</div>
+                        <div class="item-details">
+                            ${h.isDelete ? 'SUPPRIMÉ' : `
+                                ${h.data.currentRoad} → ${h.data.currentIntersection}<br>
+                                ${h.data.speed} km/h • ${h.data.direction}
+                            `}<br>
+                            <small>${new Date(h.timestamp.seconds * 1000).toLocaleString()}</small>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        async function reportIncident(event) {
+            event.preventDefault();
+            const data = {
+                id: document.getElementById('incidentId').value,
+                type: document.getElementById('incidentType').value,
+                location: document.getElementById('incidentLocation').value,
+                roadId: document.getElementById('incidentRoadId').value,
+                severity: document.getElementById('incidentSeverity').value,
+                description: document.getElementById('incidentDescription').value
+            };
+
+            try {
+                const res = await fetch(`${API_URL}/incidents`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (res.ok) {
+                    alert('✅ Incident signalé');
+                    event.target.reset();
+                    loadIncidents();
+                    loadStats();
+                } else {
+                    alert('❌ Erreur');
+                }
+            } catch (error) {
+                alert('❌ ' + error.message);
+            }
+        }
+
+        async function resolveIncident(id) {
+            if (!confirm('Résoudre cet incident?')) return;
+
+            try {
+                const res = await fetch(`${API_URL}/incidents/${id}/resolve`, { method: 'PUT' });
+                if (res.ok) {
+                    alert('✅ Incident résolu');
+                    loadIncidents();
+                    loadStats();
+                }
+            } catch (error) {
+                alert('❌ ' + error.message);
+            }
+        }
+
+        async function queryAsset() {
+            const assetId = document.getElementById('queryAssetId').value;
+            if (!assetId) return;
+
+            try {
+                // Try to find the asset in loaded data first
+                let asset = networkData.vehicles.find(v => v.id === assetId) ||
+                           networkData.roads.find(r => r.id === assetId) ||
+                           networkData.intersections.find(i => i.id === assetId);
+
+                document.getElementById('queryResult').textContent = JSON.stringify(asset || 'Asset not found', null, 2);
+            } catch (error) {
+                document.getElementById('queryResult').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        // ==================== TAB SWITCHING ====================
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'incidents') loadIncidents();
+            if (tabName === 'violations') loadViolations();
+        }
+
+        // ==================== INITIALIZATION ====================
+
+        function loadAll() {
+            loadStats();
+            loadRoads();
+            loadVehicles();
+            loadIntersections();
+        }
+
+        // Initial load
+        loadAll();
+
+        // Auto-refresh
+        setInterval(loadAll, 2000); // Every 2 seconds
+        setInterval(simulateTransactionFeed, 3000); // Simulate TX every 3 seconds
+    </script>
+</body>
+</html>

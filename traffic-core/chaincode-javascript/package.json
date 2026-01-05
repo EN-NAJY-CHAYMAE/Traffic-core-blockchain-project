@@ -1,0 +1,26 @@
+{
+  "name": "traffic-core-chaincode",
+  "version": "1.0.0",
+  "description": "Traffic Core Management System for Decentralized Smart City",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "scripts": {
+    "start": "fabric-chaincode-node start"
+  },
+  "keywords": [
+    "hyperledger",
+    "fabric",
+    "smart-city",
+    "traffic",
+    "blockchain"
+  ],
+  "author": "Your Team Name",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "fabric-contract-api": "^2.5.0",
+    "fabric-shim": "^2.5.0"
+  }
+}
