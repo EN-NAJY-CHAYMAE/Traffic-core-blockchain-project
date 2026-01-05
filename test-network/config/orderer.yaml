@@ -1,0 +1,29 @@
+General:
+  ListenAddress: 0.0.0.0
+  # ListenPort is set per-container via env ORDERER_GENERAL_LISTENPORT
+  LocalMSPID: OrdererMSP
+  LocalMSPDir: /var/hyperledger/orderer/msp
+
+  TLS:
+    Enabled: true
+    PrivateKey: /var/hyperledger/orderer/tls/server.key
+    Certificate: /var/hyperledger/orderer/tls/server.crt
+    RootCAs:
+      - /var/hyperledger/orderer/tls/ca.crt
+
+  Cluster:
+    ClientCertificate: /var/hyperledger/orderer/tls/server.crt
+    ClientPrivateKey: /var/hyperledger/orderer/tls/server.key
+    RootCAs:
+      - /var/hyperledger/orderer/tls/ca.crt
+
+ChannelParticipation:
+  Enabled: true
+
+Admin:
+  # Admin listen address is set per-container via env ORDERER_ADMIN_LISTENADDRESS
+  TLS:
+    Enabled: false
+
+FileLedger:
+  Location: /var/hyperledger/production/orderer
